@@ -13,3 +13,16 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Link {
+  id        String    @id @default(uuid())
+  url       String
+  title     String
+  tags      String[]  // PostgreSQL native array
+  readLater Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([createdAt])
+  @@index([url])
+}

@@ -9,5 +9,6 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "strict": true
-  }
+  },
+  "exclude": ["node_modules", "dist", "prisma"]
 }

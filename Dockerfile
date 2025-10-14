@@ -1,49 +1,50 @@
-# ---------- Base runtime ----------
+# ---------- Base image ----------
 FROM node:20-alpine AS base
 WORKDIR /app
-# Enable corepack so pnpm is available
+# Enable pnpm through Corepack
 RUN corepack enable
 
-# ---------- Dev deps layer ----------
+# ---------- Dependencies (common) ----------
 FROM base AS deps
-# Copy only the lockfile and package manifest for better build caching
+# Copy only dependency manifests first for layer caching
 COPY package.json pnpm-lock.yaml ./
-# Install deps (no optional to keep alpine slim)
+# Install all deps (including dev) for reuse in dev/build stages
 RUN pnpm install --frozen-lockfile
 
-# ---------- Dev runtime ----------
+# ---------- Dev environment ----------
 FROM base AS dev
-ENV NODE_ENV=development
 WORKDIR /app
-# Copy node_modules from deps stage
+ENV NODE_ENV=development
+# Copy node_modules from deps
 COPY --from=deps /app/node_modules ./node_modules
-# Copy the rest of the source
+# Copy source code
 COPY . .
-# Prisma generates client during install by default; if not, uncomment the next line:
-# RUN pnpm prisma generate
+# Generate Prisma client (useful for first run)
+RUN pnpm prisma generate
 EXPOSE 3000
-# Dev command (assumes "dev" script runs tsx/ts-node-dev/nodemon for TS)
+# Start development server with live reload
 CMD ["pnpm", "dev"]
 
 # ---------- Build for production ----------
 FROM deps AS build
 WORKDIR /app
 COPY . .
-# Generate Prisma Client for production
+# Generate Prisma client before build (required for dist)
 RUN pnpm prisma generate
-# Transpile TS -> JS (assumes "build" script creates ./dist)
 RUN pnpm build
 
 # ---------- Production runtime ----------
 FROM node:20-alpine AS prod
-ENV NODE_ENV=production
 WORKDIR /app
 RUN corepack enable
-# Copy only prod deps
+ENV NODE_ENV=production
+# Copy minimal files
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod
-# Copy built app and prisma artifacts
+# Install only production dependencies
+RUN pnpm install --prod --frozen-lockfile
+# Copy build output and Prisma files
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 EXPOSE 3000
+# Start compiled JS server
 CMD ["node", "dist/server.js"]

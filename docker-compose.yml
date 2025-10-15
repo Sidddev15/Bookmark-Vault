@@ -4,13 +4,13 @@ services:
     container_name: bookmark-db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 0015
-      POSTGRES_DB: mydb
+      POSTGRES_USER: bv_user
+      POSTGRES_PASSWORD: bv_pass
+      POSTGRES_DB: bv_db
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d mydb"]
       interval: 5s

@@ -15,15 +15,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Link {
-  id        String    @id @default(uuid())
-  url       String
-  title     String
-  tags      String[]  // PostgreSQL native array
-  readLater Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+model User {
+  id            String @id @default(cuid())
+  email         String @unique
+  password      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  links         Link[]
+  refreshTokens RefreshToken[]
+}
 
-  @@index([createdAt])
-  @@index([url])
+model RefreshToken {
+  id            String  @id @default(cuid())
+  token         String  @unique
+  user          User    @relation(fields: [userId], references: [id])
+  userId        String
+  createdAt     DateTime @default(now()) 
+}
+
+model Link {
+  id        String   @id @default(cuid())
+  title     String
+  url       String
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
 }
